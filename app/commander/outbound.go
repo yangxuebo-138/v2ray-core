@@ -4,6 +4,7 @@ package commander
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"v2ray.com/core/common"
@@ -71,6 +72,9 @@ type Outbound struct {
 
 // Dispatch implements outbound.Handler.
 func (co *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
+
+	fmt.Printf(">>>>>>>>>>> Commander outbound handler <<<<<<<<<<<<<<<<<<\n")
+
 	co.access.RLock()
 
 	if co.closed {

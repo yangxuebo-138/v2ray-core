@@ -2,6 +2,7 @@ package inbound
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -59,6 +60,8 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	sid := session.NewID()
 	ctx = session.ContextWithID(ctx, sid)
 
+	fmt.Printf(">>>>>>>>>>>>  TCP Callback session id %d<<<<<<<<<<<<<<<<<<<<\n",sid)
+
 	if w.recvOrigDest {
 		var dest net.Destination
 		switch getTProxyType(w.stream) {
@@ -97,10 +100,12 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		}
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
+		fmt.Printf("TCP connection ends %v\n", err)
 		newError("connection ends").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 	cancel()
 	if err := conn.Close(); err != nil {
+		fmt.Printf("TCP connection close failed. %v\n", err)
 		newError("failed to close connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 }
@@ -271,6 +276,9 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 }
 
 func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest net.Destination) {
+
+	fmt.Printf(">>>>>>>>>>>>  UDP Callback <<<<<<<<<<<<<<<<<<<<\n")
+
 	id := connID{
 		src: source,
 	}

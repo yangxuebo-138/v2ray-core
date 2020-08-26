@@ -2,6 +2,7 @@ package internet
 
 import (
 	"context"
+	"fmt"
 
 	"v2ray.com/core/common/net"
 )
@@ -28,6 +29,8 @@ type Listener interface {
 }
 
 func ListenTCP(ctx context.Context, address net.Address, port net.Port, settings *MemoryStreamConfig, handler ConnHandler) (Listener, error) {
+	fmt.Printf("tcp_hub ---> ListenTCP %v, Port %v\n",address,port)
+
 	if settings == nil {
 		s, err := ToMemoryStreamConfig(nil)
 		if err != nil {

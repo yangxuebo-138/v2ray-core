@@ -46,6 +46,7 @@ func (v *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error
 	if err != nil {
 		return nil, err
 	}
+
 	if err := json.Unmarshal(raw, config); err != nil {
 		return nil, err
 	}

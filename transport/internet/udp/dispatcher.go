@@ -2,6 +2,7 @@ package udp
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -81,6 +82,8 @@ func (v *Dispatcher) getInboundRay(ctx context.Context, dest net.Destination) *c
 func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, payload *buf.Buffer) {
 	// TODO: Add user to destString
 	newError("dispatch request to: ", destination).AtDebug().WriteToLog(session.ExportIDToError(ctx))
+
+	fmt.Printf("UDP Dispatch --------------->")
 
 	conn := v.getInboundRay(ctx, destination)
 	outputStream := conn.link.Writer

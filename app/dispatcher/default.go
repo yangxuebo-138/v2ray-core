@@ -6,16 +6,17 @@ package dispatcher
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/ratelimit"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/policy"
@@ -149,6 +150,63 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*transport.Link, *tran
 	var user *protocol.MemoryUser
 	if sessionInbound != nil {
 		user = sessionInbound.User
+	} else {
+		fmt.Printf(">>>>>>>>>>>>> session in bound is null. <<<<<<<<<<<<<<\n")
+	}
+
+	if user != nil {
+
+		outbound := session.OutboundFromContext(ctx)
+		istcp := true
+		if outbound != nil || outbound.Target.IsValid() {
+			istcp = outbound.Target.Network != net.Network_UDP
+		}
+
+		if istcp {
+			fmt.Printf("Set rate limit TCP. \n")
+		} else {
+			fmt.Printf("No set rate limit UDP. \n")
+		}
+
+
+		if user.DownlinkBucket != nil && istcp {
+			fmt.Printf(">>>>>>>>>>>>> Set downlink rate limit . <<<<<<<<<<<<<<\n")
+			inboundLink.Reader = &ratelimit.RateLimitStatReader{
+				Bucket: user.DownlinkBucket,
+				Reader: inboundLink.Reader,
+				SID: uint32(session.IDFromContext(ctx)),
+				Direct:  ">>>>> DOWNLINK <<<<<<<",
+			}
+
+			fmt.Printf("------------  SID %d\n", uint32(session.IDFromContext(ctx)))
+
+			//outboundLink.Writer = &ratelimit.RateLimitStatWriter{
+			//	Bucket: user.DownlinkBucket,
+			//	Writer:  outboundLink.Writer,
+			//	SID: uint32(session.IDFromContext(ctx)),
+			//	Direct:  ">>>>> DOWNLINK <<<<<<<",
+			//}
+		}
+
+		if user.UplinkBucket != nil && istcp {
+			fmt.Printf(">>>>>>>>>>>>> Set uplink rate limit . <<<<<<<<<<<<<<\n")
+			outboundLink.Reader = &ratelimit.RateLimitStatReader{
+				Bucket: user.UplinkBucket,
+				Reader: outboundLink.Reader,
+				SID: uint32(session.IDFromContext(ctx)),
+				Direct:  ">>>>> UPLINK <<<<<<<",
+			}
+
+			//inboundLink.Writer = &ratelimit.RateLimitStatWriter{
+			//	Bucket: user.UplinkBucket,
+			//	Writer:  inboundLink.Writer,
+			//	SID: uint32(session.IDFromContext(ctx)),
+			//	Direct:  ">>>>> UPLINK <<<<<<<",
+			//}
+
+
+		}
+
 	}
 
 	if user != nil && len(user.Email) > 0 {
@@ -203,8 +261,10 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	}
 	sniffingRequest := content.SniffingRequest
 	if destination.Network != net.Network_TCP || !sniffingRequest.Enabled {
+		fmt.Printf("No tcp route dispatch. %v\n", destination.Network)
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
+		fmt.Printf("route dispatch. %v\n", destination.Network)
 		go func() {
 			cReader := &cachedReader{
 				reader: outbound.Reader.(*pipe.Reader),
@@ -287,6 +347,8 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 		common.Interrupt(link.Reader)
 		return
 	}
+
+
 
 	if accessMessage := log.AccessMessageFromContext(ctx); accessMessage != nil {
 		if tag := handler.Tag(); tag != "" {

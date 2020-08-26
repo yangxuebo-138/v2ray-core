@@ -115,6 +115,7 @@ func startV2Ray() (core.Server, error) {
 
 	config, err := core.LoadConfig(GetConfigFormat(), configFiles[0], configFiles)
 	if err != nil {
+		fmt.Printf("failed to read config files: [%s] Error ： %v\n", err)
 		return nil, newError("failed to read config files: [", configFiles.String(), "]").Base(err)
 	}
 

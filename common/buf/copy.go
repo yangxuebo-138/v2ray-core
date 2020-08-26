@@ -1,9 +1,9 @@
 package buf
 
 import (
+	"fmt"
 	"io"
 	"time"
-
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/signal"
 )
@@ -21,6 +21,8 @@ type SizeCounter struct {
 
 // CopyOption is an option for copying data.
 type CopyOption func(*copyHandler)
+
+type RateLimitHandler func(*MultiBuffer) (bool)
 
 // UpdateActivity is a CopyOption to update activity on each data copy operation.
 func UpdateActivity(timer signal.ActivityUpdater) CopyOption {
@@ -80,12 +82,43 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 	for {
 		buffer, err := reader.ReadMultiBuffer()
 		if !buffer.IsEmpty() {
+
+			//fmt.Printf("Buffer read length %d\n", buffer.Len())
+
 			for _, handler := range handler.onData {
 				handler(buffer)
 			}
 
 			if werr := writer.WriteMultiBuffer(buffer); werr != nil {
 				return writeError{werr}
+			}
+		}
+
+		if err != nil {
+			return readError{err}
+		}
+	}
+}
+
+func copyInternalV2(reader Reader, writer Writer, handler *copyHandler,rateLimitHander RateLimitHandler) error {
+	for {
+		buffer, err := reader.ReadMultiBuffer()
+		if !buffer.IsEmpty() {
+
+			fmt.Printf("Buffer read length %d\n", buffer.Len())
+
+			for _, handler := range handler.onData {
+				handler(buffer)
+			}
+
+			discard := rateLimitHander(&buffer)
+
+			if discard {
+				ReleaseMulti(buffer)
+			} else {
+				if werr := writer.WriteMultiBuffer(buffer); werr != nil {
+					return writeError{werr}
+				}
 			}
 		}
 
@@ -102,6 +135,18 @@ func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 		option(&handler)
 	}
 	err := copyInternal(reader, writer, &handler)
+	if err != nil && errors.Cause(err) != io.EOF {
+		return err
+	}
+	return nil
+}
+
+func CopyV2(reader Reader, writer Writer, rateLimitHander RateLimitHandler, options ...CopyOption) error {
+	var handler copyHandler
+	for _, option := range options {
+		option(&handler)
+	}
+	err := copyInternalV2(reader, writer, &handler, rateLimitHander)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}

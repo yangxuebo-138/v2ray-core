@@ -3,6 +3,7 @@
 package core
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
@@ -76,6 +77,7 @@ func LoadConfig(formatName string, filename string, input interface{}) (*Config,
 
 func loadProtobufConfig(data []byte) (*Config, error) {
 	config := new(Config)
+	fmt.Printf(">>>>> %s\n",data)
 	if err := proto.Unmarshal(data, config); err != nil {
 		return nil, err
 	}

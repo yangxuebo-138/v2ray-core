@@ -22,6 +22,9 @@ type MemoryAccount struct {
 	Cipher      Cipher
 	Key         []byte
 	OneTimeAuth Account_OneTimeAuth
+	UplinkSpeed uint64
+	DownlinkSpeed uint64
+	WaitQueue     uint32
 }
 
 // Equals implements protocol.Account.Equals().
@@ -88,9 +91,12 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 		return nil, newError("failed to get cipher").Base(err)
 	}
 	return &MemoryAccount{
-		Cipher:      cipher,
-		Key:         passwordToCipherKey([]byte(a.Password), cipher.KeySize()),
-		OneTimeAuth: a.Ota,
+		Cipher:        cipher,
+		Key:           passwordToCipherKey([]byte(a.Password), cipher.KeySize()),
+		OneTimeAuth:   a.Ota,
+		UplinkSpeed:   a.UplinkSpeed,
+		DownlinkSpeed: a.DownlinkSpeed,
+		WaitQueue:     a.WaitQueue,
 	}, nil
 }
 

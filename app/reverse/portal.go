@@ -4,6 +4,7 @@ package reverse
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -97,6 +98,9 @@ func (o *Outbound) Tag() string {
 }
 
 func (o *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
+
+	fmt.Printf(">>>>>>>>>>> Reverse portal handler <<<<<<<<<<<<<<<<<<\n")
+
 	if err := o.portal.HandleConnection(ctx, link); err != nil {
 		newError("failed to process reverse connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		common.Interrupt(link.Writer)

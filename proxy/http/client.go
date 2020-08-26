@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -66,6 +67,9 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 
 // Process implements proxy.Outbound.Process. We first create a socket tunnel via HTTP CONNECT method, then redirect all inbound traffic to that tunnel.
 func (c *Client) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+
+	fmt.Printf("Outbound link dispatch HTTP\n")
+
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")

@@ -4,8 +4,8 @@ package shadowsocks
 
 import (
 	"context"
+	"fmt"
 	"time"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	udp_proto "v2ray.com/core/common/protocol/udp"
+	"v2ray.com/core/common/ratelimit"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
@@ -34,6 +35,8 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		return nil, newError("user is not specified")
 	}
 
+	fmt.Printf(">>>>>>>>>>>>  New shadowsocks server 30Mbps   <<<<<<<<<<<<<<<<<<\n")
+
 	mUser, err := config.User.ToMemoryUser()
 	if err != nil {
 		return nil, newError("failed to parse user account").Base(err)
@@ -45,6 +48,25 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		user:          mUser,
 		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
+
+	if account, ok := mUser.Account.(*MemoryAccount); ok {
+
+		if account.UplinkSpeed > 0 {
+			s.user.UplinkBucket = ratelimit.NewBucketWithRate(1024 * float64(account.UplinkSpeed), 1024 * int64(account.UplinkSpeed))
+			if account.WaitQueue > 0 {
+				s.user.UplinkBucket.SetMaxWaitQueue(time.Duration(int64(account.WaitQueue) * 1000000000))
+			}
+		}
+
+		if account.DownlinkSpeed > 0 {
+			s.user.DownlinkBucket = ratelimit.NewBucketWithRate(1024 * float64(account.DownlinkSpeed), 1024 * int64(account.DownlinkSpeed))
+
+			if account.WaitQueue > 0 {
+				s.user.DownlinkBucket.SetMaxWaitQueue(time.Duration(int64(account.WaitQueue) * 1e9))
+			}
+		}
+	}
+
 
 	return s, nil
 }
@@ -154,11 +176,17 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 }
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher routing.Dispatcher) error {
+
 	sessionPolicy := s.policyManager.ForLevel(s.user.Level)
 	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake))
 
+	fmt.Printf("Shadowsocks handle connection %d. ConnectionIdle %d.\n", sessionPolicy.Timeouts.Handshake, sessionPolicy.Timeouts.ConnectionIdle)
+
 	bufferedReader := buf.BufferedReader{Reader: buf.NewReader(conn)}
 	request, bodyReader, err := ReadTCPSession(s.user, &bufferedReader)
+
+	//fmt.Printf("Shadowsocks handle bodyReader %v, request %v\n", bodyReader, request)
+
 	if err != nil {
 		log.Record(&log.AccessMessage{
 			From:   conn.RemoteAddr(),
@@ -209,6 +237,9 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			if err != nil {
 				return err
 			}
+
+			//fmt.Printf("Response done payload %v\n",payload)
+
 			if err := responseWriter.WriteMultiBuffer(payload); err != nil {
 				return err
 			}
@@ -231,6 +262,14 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		if err := buf.Copy(bodyReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
+
+		//updateToken := func(mb *buf.MultiBuffer) (bool) {
+		//	return s.user.UplinkBucket.Wait2(int64(mb.Len()))
+		//}
+		//
+		//if err := buf.CopyV2(bodyReader, link.Writer, updateToken, buf.UpdateActivity(timer)); err != nil {
+		//	return newError("failed to transport all TCP request").Base(err)
+		//}
 
 		return nil
 	}

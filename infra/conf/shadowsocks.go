@@ -39,6 +39,9 @@ type ShadowsocksServerConfig struct {
 	Email       string       `json:"email"`
 	OTA         *bool        `json:"ota"`
 	NetworkList *NetworkList `json:"network"`
+	UplinkSpeed uint64       `json:"uplinkspeed"`
+	DownlinkSpeed uint64     `json:"downlinkspeed"`
+	WaitQueue     uint32     `json:"waitqueue"`
 }
 
 func (v *ShadowsocksServerConfig) Build() (proto.Message, error) {
@@ -52,6 +55,9 @@ func (v *ShadowsocksServerConfig) Build() (proto.Message, error) {
 	account := &shadowsocks.Account{
 		Password: v.Password,
 		Ota:      shadowsocks.Account_Auto,
+		UplinkSpeed: v.UplinkSpeed,
+		DownlinkSpeed: v.DownlinkSpeed,
+		WaitQueue:   v.WaitQueue,
 	}
 	if v.OTA != nil {
 		if *v.OTA {
@@ -82,6 +88,9 @@ type ShadowsocksServerTarget struct {
 	Email    string   `json:"email"`
 	Ota      bool     `json:"ota"`
 	Level    byte     `json:"level"`
+	UplinkSpeed uint64       `json:"uplinkspeed"`
+	DownlinkSpeed uint64     `json:"downlinkspeed"`
+	WaitQueue     uint32     `json:"waitqueue"`
 }
 
 type ShadowsocksClientConfig struct {

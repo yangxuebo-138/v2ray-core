@@ -79,6 +79,7 @@ func (c *ConfigCommand) LoadArg(arg string) (out io.Reader, err error) {
 	if err != nil {
 		return
 	}
+
 	out = bytes.NewBuffer(data)
 	return
 }

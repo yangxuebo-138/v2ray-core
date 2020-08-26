@@ -1,5 +1,9 @@
 package protocol
 
+import (
+	"v2ray.com/core/common/ratelimit"
+)
+
 func (u *User) GetTypedAccount() (Account, error) {
 	if u.GetAccount() == nil {
 		return nil, newError("Account missing").AtWarning()
@@ -36,4 +40,6 @@ type MemoryUser struct {
 	Account Account
 	Email   string
 	Level   uint32
+	UplinkBucket    *ratelimit.Bucket
+	DownlinkBucket  *ratelimit.Bucket
 }

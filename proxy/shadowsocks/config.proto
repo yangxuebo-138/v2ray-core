@@ -19,6 +19,9 @@ message Account {
   string password = 1;
   CipherType cipher_type = 2;
   OneTimeAuth ota = 3;
+  uint64 uplink_speed = 4;
+  uint64 downlink_speed = 5;
+  uint32 wait_queue = 6;
 }
 
 enum CipherType {

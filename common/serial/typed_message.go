@@ -13,6 +13,7 @@ func ToTypedMessage(message proto.Message) *TypedMessage {
 		return nil
 	}
 	settings, _ := proto.Marshal(message)
+
 	return &TypedMessage{
 		Type:  GetMessageType(message),
 		Value: settings,

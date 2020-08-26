@@ -93,6 +93,9 @@ func isValidAddress(addr *net.IPOrDomain) bool {
 
 // Process implements proxy.Outbound.
 func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+
+	//fmt.Printf("Outbound link dispatch freedomm\n")
+
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")

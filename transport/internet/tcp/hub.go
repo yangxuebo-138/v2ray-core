@@ -5,6 +5,7 @@ package tcp
 import (
 	"context"
 	gotls "crypto/tls"
+	"fmt"
 	"strings"
 	"time"
 
@@ -26,6 +27,7 @@ type Listener struct {
 
 // ListenTCP creates a new Listener based on configurations.
 func ListenTCP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, handler internet.ConnHandler) (internet.Listener, error) {
+	fmt.Printf("tcp/hub ---> ListenTCP %v, Port %v\n",address,port)
 	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -64,6 +66,9 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, streamSe
 func (v *Listener) keepAccepting() {
 	for {
 		conn, err := v.listener.Accept()
+
+		fmt.Printf("Accept from %v\n",conn.RemoteAddr())
+
 		if err != nil {
 			errStr := err.Error()
 			if strings.Contains(errStr, "closed") {

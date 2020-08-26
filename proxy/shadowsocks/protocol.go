@@ -5,6 +5,7 @@ package shadowsocks
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"io"
 
 	"v2ray.com/core/common"
@@ -65,6 +66,8 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 		return nil, nil, newError("failed to read address").Base(err)
 	}
 
+	fmt.Printf("Read addr %s:%d \n",addr, port)
+
 	request.Address = addr
 	request.Port = port
 
@@ -102,8 +105,10 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 
 	var chunkReader buf.Reader
 	if request.Option.Has(RequestOptionOneTimeAuth) {
+		//fmt.Printf("New chunk reader\n")
 		chunkReader = NewChunkReader(br, NewAuthenticator(ChunkKeyGenerator(iv)))
 	} else {
+		//fmt.Printf("New reader\n")
 		chunkReader = buf.NewReader(br)
 	}
 

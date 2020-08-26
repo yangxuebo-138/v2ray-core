@@ -2,7 +2,7 @@ package outbound
 
 import (
 	"context"
-
+	"fmt"
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
@@ -131,12 +131,19 @@ func (h *Handler) Tag() string {
 
 // Dispatch implements proxy.Outbound.Dispatch.
 func (h *Handler) Dispatch(ctx context.Context, link *transport.Link) {
+
+	//fmt.Printf(">>>>>>>>>>> Proxyman outbound handler <<<<<<<<<<<<<<<<<<\n")
+
 	if h.mux != nil && (h.mux.Enabled || session.MuxPreferedFromContext(ctx)) {
+
+		fmt.Printf(">>>>>>>>>>>>>>>> Mux dispatch <<<<<<<<<<<<<<\n")
+
 		if err := h.mux.Dispatch(ctx, link); err != nil {
 			newError("failed to process mux outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)
 		}
 	} else {
+
 		if err := h.proxy.Process(ctx, link, h); err != nil {
 			// Ensure outbound ray is properly closed.
 			newError("failed to process outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))

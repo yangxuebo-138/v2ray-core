@@ -29,8 +29,14 @@ func main() {
 
 	protofiles := make(map[string][]string)
 	protoc := protocMap[runtime.GOOS]
+	fmt.Printf("%s\n", protoc)
+	protoc = "G:\\Golang\\code\\src\\v2ray.com\\core\\.dev\\protoc\\windows\\protoc.exe"
 	gosrc := filepath.Join(os.Getenv("GOPATH"), "src")
+	fmt.Printf("%s\n", gosrc)
+	gosrc = "G:\\Golang\\code\\src"
 	reporoot := filepath.Join(os.Getenv("GOPATH"), "src", *repo)
+	fmt.Printf("%s\n", reporoot)
+	reporoot = "G:\\Golang\\code\\src"
 
 	filepath.Walk(reporoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -56,12 +62,14 @@ func main() {
 		args = append(args, files...)
 		cmd := exec.Command(protoc, args...)
 		cmd.Env = append(cmd.Env, os.Environ()...)
+		fmt.Printf("%v\n", cmd.Env)
 		output, err := cmd.CombinedOutput()
 		if len(output) > 0 {
-			fmt.Println(string(output))
+			//fmt.Println(string(output))
+			fmt.Printf("%s\n",output)
 		}
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("%v\n", err)
 		}
 	}
 
